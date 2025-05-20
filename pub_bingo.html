@@ -248,6 +248,7 @@
       <option value="game7Pattern">Game 7</option>
       <option value="game8Pattern">Game 8</option>
       <option value="game9Pattern">Game 9</option>
+      <option value="game10Pattern">Blackout</option>
     </select>
 
     <div class="drawn-ball" id="drawnBall">B-12</div>
@@ -667,6 +668,14 @@
       0, 0, 0, 0, 0,
       1, 1, 1, 1, 1
     ];
+
+    const game10Pattern = [
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1
+    ];
   
     applyPattern(game1Pattern);
 
@@ -692,6 +701,8 @@
         applyPattern(game8Pattern);
       } else if (selectedValue === "game9Pattern") {
         applyPattern(game9Pattern);
+      }  else if (selectedValue === "game10Pattern") {
+        applyPattern(game10Pattern);
       } else {
         applyPattern(game1Pattern);
       }
