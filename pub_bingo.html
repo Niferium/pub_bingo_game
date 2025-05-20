@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bingo Ball Drawing Animation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    
+    .container {
+      text-align: center;
+      width: 90%;
+      max-width: 600px;
+    }
+    
+    .bingo-machine {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e0e0e0, #c0c0c0);
+      border: 10px solid #888;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      overflow: hidden;
+      perspective: 500px;
+    }
+    
+    .balls-container {
+      position: absolute;
+      width: 90%;
+      height: 90%;
+      top: 5%;
+      left: 5%;
+      border-radius: 50%;
+      background-color: transparent;
+      overflow: hidden;
+    }
+    
+    .ball {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, white, #FdB913);
+      color: black;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset -2px -2px 6px rgba(0,0,0,0.3), 2px 2px 4px rgba(0,0,0,0.2);
+      font-size: 14px;
+      transform: scale(1);
+      transition: transform 0.2s;
+      will-change: transform, left, top;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(5deg); }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      25% { transform: translateX(-5px) rotate(-3deg); }
+      75% { transform: translateX(5px) rotate(3deg); }
+    }
+    
+    .drawn-ball {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin: 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      color: black;
+      background: radial-gradient(circle at 30% 30%, white, #FdB913);
+      box-shadow: 5px 5px 15px rgba(0,0,0,0.3), inset -3px -3px 10px rgba(0,0,0,0.2);
+      transition: transform 0.5s, opacity 0.5s;
+      transform: scale(0);
+      opacity: 0;
+    }
+    
+    .drawn-ball.show {
+      transform: scale(1);
+      opacity: 1;
+    }
+    
+    .draw-button {
+      padding: 12px 24px;
+      font-size: 18px;
+      background-color: #FdB913;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 20px;
+    }
+    
+    .draw-button:hover {
+      background-color: #45a049;
+    }
+    
+    .draw-button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .history {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 5px;
+      max-width: 300px;
+    }
+    
+    .history-ball {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, white, #FdB913);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+      font-size: 12px;
+    }
+    
+    .title {
+      font-size: 32px;
+      color: #333;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .spinner {
+      position: absolute;
+      width: 90%;
+      height: 90%;
+      top: 5%;
+      left: 5%;
+      border-radius: 50%;
+      border: 4px dashed rgba(0,0,0,0.3);
+      animation: spin 4s linear infinite;
+      display: none;
+    }
+    
+    .spinner.active {
+      display: block;
+    }
+    
+    .draw-counter {
+      font-size: 18px;
+      margin-top: 15px;
+      color: #666;
+    }
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      grid-template-rows: repeat(5, 60px);
+      gap: 5px;
+    }
+    .cell {
+      padding: 10px;
+      border-style: solid;
+      border-color: #FdB913;
+      background-color: #004B9B;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .cell.active {
+      background-color: #FdB913;
+      color: white;
+      border-color: #FdB913;
+    }
+
+    .cell.free {
+      background-color: #d8bfff;
+      color: #4b0082;
+    }
+    .row {
+      display: flex;
+      width: 100%;
+    }
+    .column {
+      flex: 1;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <div class="column">
+      <div class="bingo-machine">
+        <div class="spinner"></div>
+        <div class="balls-container" id="ballsContainer"></div>
+      </div>
+    </div>
+    <div class="column">
+      <div class="bingo-grid" id="patternViewer"></div>
+    </div>
+  </div>
+  <div class="container">
+    <!-- <h1 class="title">Bingo Ball Draw</h1> -->
+    <select id="dropdown" onchange="changeLabelText()">
+      <option value="game1Pattern">Game 1</option>
+      <option value="game2Pattern">Game 2</option>
+      <option value="game3Pattern">Game 3</option>
+      <option value="game4Pattern">Game 4</option>
+      <option value="game5Pattern">Game 5</option>
+      <option value="game6Pattern">Game 6</option>
+      <option value="game7Pattern">Game 7</option>
+      <option value="game8Pattern">Game 8</option>
+      <option value="game9Pattern">Game 9</option>
+    </select>
+    <!-- <div class="bingo-machine">
+      <div class="spinner"></div>
+      <div class="balls-container" id="ballsContainer"></div>
+    </div> -->
+    
+    <div class="drawn-ball" id="drawnBall">B-12</div>
+    
+    <button id="drawButton" class="draw-button">Draw Ball</button>
+    
+    <div class="draw-counter" id="drawCounter">0 balls drawn</div>
+    
+    <div class="history" id="history"></div>
+  </div>
+
+  <script>
+    // Define the bingo ball ranges
+    const bingoLetters = ['B', 'I', 'N', 'G', 'O'];
+    const numberRanges = {
+      B: [1, 15],
+      I: [16, 30],
+      N: [31, 45],
+      G: [46, 60],
+      O: [61, 75]
+    };
+    
+    // Create all possible balls
+    const allBalls = [];
+    bingoLetters.forEach(letter => {
+      const range = numberRanges[letter];
+      for (let i = range[0]; i <= range[1]; i++) {
+        allBalls.push({
+          letter: letter,
+          number: i,
+          drawn: false
+        });
+      }
+    });
+    
+    const ballsContainer = document.getElementById('ballsContainer');
+    const drawnBall = document.getElementById('drawnBall');
+    const drawButton = document.getElementById('drawButton');
+    const history = document.getElementById('history');
+    const spinner = document.querySelector('.spinner');
+    const drawCounter = document.getElementById('drawCounter');
+    
+    let drawCount = 0;
+    let isAnimating = false;
+    let animationInterval = null;
+    let ballPhysics = [];
+    
+    // Initialize the bingo machine with small balls
+    function initBallsInMachine() {
+      ballsContainer.innerHTML = '';
+      ballPhysics = [];
+      
+      for (let i = 0; i < 30; i++) {
+        const ball = document.createElement('div');
+        ball.className = 'ball';
+        
+        // Random position within the container
+        const randomX = Math.floor(Math.random() * 70) + 15;
+        const randomY = Math.floor(Math.random() * 70) + 15;
+        
+        // Physics properties for each ball
+        const physics = {
+          x: randomX,
+          y: randomY,
+          vx: Math.random() * 6 - 3, // Initial velocity X (-3 to 3)
+          vy: Math.random() * 6 - 3, // Initial velocity Y (-3 to 3)
+          gravity: 0.2 + Math.random() * 0.1,
+          bounce: 0.7 + Math.random() * 0.2,
+          friction: 0.97 + Math.random() * 0.02,
+          rotationAngle: Math.random() * 360,
+          rotationSpeed: Math.random() * 4 - 2,
+          scale: 0.8 + Math.random() * 0.4
+        };
+        
+        ballPhysics.push(physics);
+        
+        ball.style.left = `${randomX}%`;
+        ball.style.top = `${randomY}%`;
+        ball.style.transform = `scale(${physics.scale}) rotate(${physics.rotationAngle}deg)`;
+        ball.style.backgroundColor = getRandomBallColor();
+        ball.style.zIndex = Math.floor(Math.random() * 30);
+        
+        // Add subtle animations
+        const animations = ['bounce', 'shake'];
+        const randomAnim = animations[Math.floor(Math.random() * animations.length)];
+        const animDuration = 0.5 + Math.random() * 1.5;
+        const animDelay = Math.random() * 2;
+        ball.style.animation = `${randomAnim} ${animDuration}s ease-in-out ${animDelay}s infinite`;
+        
+        ballsContainer.appendChild(ball);
+      }
+    }
+    
+    function getRandomBallColor() {
+      const colors = [
+        '#ffd700', '#ff9900', '#ff6347', '#87ceeb', 
+        '#90ee90', '#ff69b4', '#ba55d3', '#f0e68c'
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+    
+    // Continuous ball animation with physics
+    function animateBalls() {
+      const machineBalls = document.querySelectorAll('.ball');
+      
+      machineBalls.forEach((ball, index) => {
+        const physics = ballPhysics[index];
+        
+        // Apply physics
+        physics.vy += physics.gravity; // Apply gravity
+        physics.vx *= physics.friction; // Apply friction
+        physics.vy *= physics.friction; // Apply friction
+        
+        // Update position
+        physics.x += physics.vx;
+        physics.y += physics.vy;
+        
+        // Boundary collisions with bounce effect
+        if (physics.x < 5) {
+          physics.x = 5;
+          physics.vx = Math.abs(physics.vx) * physics.bounce;
+          physics.rotationSpeed = physics.rotationSpeed * -0.8; // Change rotation on bounce
+        } else if (physics.x > 95) {
+          physics.x = 95;
+          physics.vx = -Math.abs(physics.vx) * physics.bounce;
+          physics.rotationSpeed = physics.rotationSpeed * -0.8;
+        }
+        
+        if (physics.y < 5) {
+          physics.y = 5;
+          physics.vy = Math.abs(physics.vy) * physics.bounce;
+          physics.rotationSpeed = physics.rotationSpeed * 0.9;
+        } else if (physics.y > 95) {
+          physics.y = 95;
+          physics.vy = -Math.abs(physics.vy) * physics.bounce;
+          // Add a random horizontal "kick" when hitting bottom
+          physics.vx += (Math.random() * 2 - 1);
+        }
+        
+        // Update rotation
+        physics.rotationAngle += physics.rotationSpeed;
+        
+        // Apply to visual ball with no transition for physics animation
+        ball.style.transition = 'none';
+        ball.style.left = `${physics.x}%`;
+        ball.style.top = `${physics.y}%`;
+        ball.style.transform = `scale(${physics.scale}) rotate(${physics.rotationAngle}deg)`;
+        
+        // Create illusion of 3D movement based on position
+        const zDepth = Math.max(0, 50 - Math.abs(physics.y - 50));
+        const shadowBlur = 3 + (zDepth / 10);
+        const opacity = 0.7 + (zDepth / 100);
+        
+        ball.style.boxShadow = `inset -2px -2px 6px rgba(0,0,0,0.3), 
+                               ${shadowBlur}px ${shadowBlur}px ${shadowBlur * 2}px rgba(0,0,0,0.15)`;
+        ball.style.opacity = opacity;
+      });
+    }
+    
+    // Add some turbulence/energy to the system
+    function addTurbulence() {
+      ballPhysics.forEach(physics => {
+        physics.vx += (Math.random() * 20 - 12);
+        physics.vy += (Math.random() * 24 - 12);
+        physics.rotationSpeed += (Math.random() * 4 - 2);
+      });
+    }
+    
+    // Gradually slow down the balls
+    function slowDownBalls() {
+      const machineBalls = document.querySelectorAll('.ball');
+      
+      ballPhysics.forEach((physics, index) => {
+        // Gradually increase friction to slow down
+        physics.friction *= 0.99;
+        
+        // Apply reduced physics
+        physics.vy += physics.gravity * 0.5;
+        physics.vx *= physics.friction;
+        physics.vy *= physics.friction;
+        physics.rotationSpeed *= physics.friction;
+        
+        // Update position with dampened values
+        physics.x += physics.vx * 0.8;
+        physics.y += physics.vy * 0.8;
+        
+        // Apply boundary checks
+        if (physics.x < 5) physics.x = 5;
+        if (physics.x > 95) physics.x = 95;
+        if (physics.y < 5) physics.y = 5;
+        if (physics.y > 95) physics.y = 95; 
+        
+        // Update rotation
+        physics.rotationAngle += physics.rotationSpeed * 0.5;
+        
+        // Apply to visual ball with slow transition to create smooth slowdown
+        const ball = machineBalls[index];
+        ball.style.transition = 'left 0.8s, top 0.8s, transform 0.8s';
+        ball.style.left = `${physics.x}%`;
+        ball.style.top = `${physics.y}%`;
+        ball.style.transform = `scale(${physics.scale}) rotate(${physics.rotationAngle}deg)`;
+      });
+    }
+    
+    // Stop the balls completely
+    function stopBalls() {
+      clearInterval(animationInterval);
+      const machineBalls = document.querySelectorAll('.ball');
+      
+      machineBalls.forEach((ball, index) => {
+        // Create a final settling effect
+        const physics = ballPhysics[index];
+        
+        // Slightly adjust position to create a "settling" effect
+        physics.y = Math.min(95, physics.y + Math.random() * 2);
+        
+        // Stop all motion
+        physics.vx = 0;
+        physics.vy = 0;
+        physics.rotationSpeed = 0;
+        
+        // Apply to visual ball with slow final transition
+        ball.style.transition = 'left 1s cubic-bezier(0.4, 0.0, 0.2, 1), top 1s cubic-bezier(0.4, 0.0, 0.2, 1), transform 1s';
+        ball.style.left = `${physics.x}%`;
+        ball.style.top = `${physics.y}%`;
+        ball.style.transform = `scale(${physics.scale}) rotate(${physics.rotationAngle}deg)`;
+        
+        // Remove animations
+        ball.style.animation = 'none';
+      });
+    }
+    
+    // Draw a random ball
+    function drawRandomBall() {
+      if (isAnimating) return;
+      
+      const remainingBalls = allBalls.filter(ball => !ball.drawn);
+      
+      if (remainingBalls.length === 0) {
+        drawButton.disabled = true;
+        drawButton.textContent = "All Balls Drawn";
+        return;
+      }
+      
+      isAnimating = true;
+      drawButton.disabled = true;
+      spinner.classList.add('active');
+      
+      // Select random ball from remaining balls
+      const randomIndex = Math.floor(Math.random() * remainingBalls.length);
+      const selectedBall = remainingBalls[randomIndex];
+      selectedBall.drawn = true;
+      
+      // Update counter
+      drawCount++;
+      drawCounter.textContent = `${drawCount} balls drawn`;
+      
+      // Add initial turbulence
+      addTurbulence();
+      
+      // Start rapid animation of balls with physics
+      animationInterval = setInterval(animateBalls, 16); // ~60fps for smooth animation
+      
+      // Add more turbulence after a short time
+      setTimeout(addTurbulence, 300);
+      setTimeout(addTurbulence, 600);
+      
+      // After 2 seconds, start slowing down
+      setTimeout(() => {
+        clearInterval(animationInterval);
+        animationInterval = setInterval(slowDownBalls, 1500);
+        
+        // After 1 more second (3 seconds total), stop balls completely
+        setTimeout(() => {
+          stopBalls();
+          
+          // Hide the current ball display
+          drawnBall.classList.remove('show');
+          
+          // After a short pause, reveal the selected ball
+          setTimeout(() => {
+            // Set the new ball value
+            drawnBall.textContent = `${selectedBall.letter}-${selectedBall.number}`;
+            
+            // Show the drawn ball with animation
+            drawnBall.classList.add('show');
+            
+            // Add to history
+            const historyBall = document.createElement('div');
+            historyBall.className = 'history-ball';
+            historyBall.textContent = `${selectedBall.letter}-${selectedBall.number}`;
+            history.appendChild(historyBall);
+            
+            spinner.classList.remove('active');
+            drawButton.disabled = false;
+            isAnimating = false;
+          }, 500);
+        }, 1000);
+      }, 3000);
+    }
+    
+    // Initialize
+    window.addEventListener('load', () => {
+      initBallsInMachine();
+      drawnBall.textContent = '';
+    });
+    
+    // Event listener
+    drawButton.addEventListener('click', drawRandomBall);
+
+    // 🔮 Function to apply a pattern (e.g. diagonal pattern)
+    const patternGrid = document.getElementById('patternViewer');
+    // Optional: You can label them B-I-N-G-O or leave blank
+    const isFree = (row, col) => row === 2 && col === 2;
+
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+
+        if (isFree(row, col)) {
+          cell.classList.add('free');
+          cell.innerText = '★';
+        } else {
+          cell.innerText = '';
+        }
+
+        patternGrid.appendChild(cell);
+      }
+    }
+    
+    function applyPattern(patternArray) {
+      const cells = document.querySelectorAll('.bingo-grid .cell');
+      patternArray.forEach((active, index) => {
+        if (active) cells[index].classList.add('active');
+        else cells[index].classList.remove('active');
+      });
+    }
+
+    // 🟣 Example pattern: Top-left to bottom-right diagonal
+    const exampleDiagonal = [
+      1, 0, 0, 0, 0,
+      0, 1, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 0, 1, 0,
+      0, 0, 0, 0, 1
+    ];
+
+    const game1Pattern = [
+      1, 0, 0, 0, 1,
+      0, 0, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 1, 0, 0
+    ];
+
+    const game2Pattern = [
+      1, 0, 0, 0, 0,
+      0, 1, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 0, 1, 0,
+      0, 0, 0, 0, 1
+    ];
+
+    const game3Pattern = [
+      1, 0, 0, 0, 1,
+      0, 0, 0, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 0, 0, 0,
+      1, 0, 0, 0, 1
+    ];
+
+    const game4Pattern = [
+      0, 0, 0, 0, 0,
+      0, 1, 1, 1, 0,
+      0, 0, 1, 0, 0,
+      0, 1, 1, 1, 0,
+      0, 0, 0, 0, 0
+    ];
+
+    const game5Pattern = [
+      1, 0, 1, 0, 0,
+      0, 1, 1, 0, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 0, 1, 0, 1
+    ];
+
+    const game6Pattern = [
+      0, 0, 0, 0, 0,
+      0, 1, 1, 1, 0,
+      0, 1, 1, 1, 0,
+      0, 1, 1, 1, 0,
+      0, 1, 1, 1, 0
+    ];
+
+    const game7Pattern = [
+      1, 0, 0, 0, 1,
+      0, 1, 0, 1, 0,
+      0, 0, 1, 0, 0,
+      0, 1, 0, 1, 0,
+      1, 0, 0, 0, 1
+    ];
+
+    const game8Pattern = [
+      0, 0, 0, 0, 0,
+      1, 1, 1, 1, 1,
+      0, 0, 1, 0, 0,
+      1, 1, 1, 1, 1,
+      0, 0, 0, 0, 0
+    ];
+
+    const game9Pattern = [
+      1, 1, 1, 1, 1,
+      0, 0, 0, 0, 0,
+      1, 1, 1, 1, 1,
+      0, 0, 0, 0, 0,
+      1, 1, 1, 1, 1
+    ];
+  
+    applyPattern(game1Pattern);
+
+    const dropdown = document.getElementById("dropdown");
+    dropdown.addEventListener("change", function () {
+    const selectedValue = dropdown.value;
+
+      if (selectedValue === "game1Pattern") {
+        applyPattern(game1Pattern);
+      } else if (selectedValue === "game2Pattern") {
+        applyPattern(game2Pattern);
+      } else if (selectedValue === "game3Pattern") {
+        applyPattern(game3Pattern);
+      } else if (selectedValue === "game4Pattern") {
+        applyPattern(game4Pattern);
+      } else if (selectedValue === "game5Pattern") {
+        applyPattern(game5Pattern);
+      } else if (selectedValue === "game6Pattern") {
+        applyPattern(game6Pattern);
+      } else if (selectedValue === "game7Pattern") {
+        applyPattern(game7Pattern);
+      } else if (selectedValue === "game8Pattern") {
+        applyPattern(game8Pattern);
+      } else if (selectedValue === "game9Pattern") {
+        applyPattern(game9Pattern);
+      } else {
+        applyPattern(game1Pattern);
+      }
+  });
+  </script>
+</body>
+</html>
